@@ -1131,7 +1131,7 @@ func (cli *DockerCli) CmdLink(args ...string) error {
 	fmt.Fprintf(w, "FROM\tTO\tADDRESS\tALIAS")
 	fmt.Fprintf(w, "\n")
 	for _, l := range links {
-		fmt.Fprintf(w, "%s\t%s\t%s\t%s", l.From, l.To, l.Addr, l.Alias)
+		fmt.Fprintf(w, "%s\t%s\t%s\t%s", l.From, l.To, fmt.Sprintf("%s:%s", l.IP, l.Port), l.Alias)
 		fmt.Fprintf(w, "\n")
 	}
 	w.Flush()
