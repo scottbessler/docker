@@ -29,6 +29,7 @@ func main() {
 	flVersion := flag.Bool("v", false, "Print version information and quit")
 	flDaemon := flag.Bool("d", false, "Daemon mode")
 	flDebug := flag.Bool("D", false, "Debug mode")
+	flAutoRestart := flag.Bool("r", true, "Restart previously running containers")
 	bridgeName := flag.String("b", "", "Attach containers to a pre-existing network bridge. Use 'none' to disable container networking")
 	pidfile := flag.String("p", "/var/run/docker.pid", "File containing process PID")
 	flGraphPath := flag.String("g", "/var/lib/docker", "Path to graph storage base dir.")
@@ -63,7 +64,7 @@ func main() {
 			flag.Usage()
 			return
 		}
-		if err := daemon(*pidfile, *flGraphPath, flHosts, *flEnableCors, *flDns); err != nil {
+		if err := daemon(*pidfile, *flGraphPath, flHosts, *flAutoRestart, *flEnableCors, *flDns); err != nil {
 			log.Fatal(err)
 			os.Exit(-1)
 		}
@@ -114,7 +115,7 @@ func removePidFile(pidfile string) {
 	}
 }
 
-func daemon(pidfile string, flGraphPath string, protoAddrs []string, enableCors bool, flDns string) error {
+func daemon(pidfile string, flGraphPath string, protoAddrs []string, autoRestart, enableCors bool, flDns string) error {
 	if err := createPidFile(pidfile); err != nil {
 		log.Fatal(err)
 	}
@@ -132,7 +133,7 @@ func daemon(pidfile string, flGraphPath string, protoAddrs []string, enableCors 
 	if flDns != "" {
 		dns = []string{flDns}
 	}
-	server, err := docker.NewServer(flGraphPath, enableCors, dns)
+	server, err := docker.NewServer(flGraphPath, autoRestart, enableCors, dns)
 	if err != nil {
 		return err
 	}
