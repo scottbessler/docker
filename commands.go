@@ -1564,7 +1564,7 @@ func (cli *DockerCli) CmdRun(args ...string) error {
 	if !config.AttachStdout && !config.AttachStderr {
 		// Detached mode
 		<-wait
-	} else {
+	} else if !hostConfig.AutoRemove {
 		status, err := waitForExit(cli, runResult.ID)
 		if err != nil {
 			return err

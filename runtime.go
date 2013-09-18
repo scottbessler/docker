@@ -174,7 +174,7 @@ func (runtime *Runtime) Register(container *Container) error {
 		close(container.waitLock)
 	} else if !nomonitor {
 		container.allocateNetwork()
-		go container.monitor()
+		go container.monitor(nil)
 	}
 	return nil
 }

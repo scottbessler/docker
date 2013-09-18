@@ -90,6 +90,7 @@ type HostConfig struct {
 	Binds           []string
 	ContainerIDFile string
 	LxcConf         []KeyValuePair
+	AutoRemove      bool
 }
 
 type BindMap struct {
@@ -126,6 +127,7 @@ func ParseRun(args []string, capabilities *Capabilities) (*Config, *HostConfig, 
 	flContainerIDFile := cmd.String("cidfile", "", "Write the container ID to the file")
 	flNetwork := cmd.Bool("n", true, "Enable networking for this container")
 	flPrivileged := cmd.Bool("privileged", false, "Give extended privileges to this container")
+	flAutoRemove := cmd.Bool("rm", false, "Remove the container after it has been stopped")
 
 	if capabilities != nil && *flMemory > 0 && !capabilities.MemoryLimit {
 		//fmt.Fprintf(stdout, "WARNING: Your kernel does not support memory limit capabilities. Limitation discarded.\n")
@@ -240,6 +242,7 @@ func ParseRun(args []string, capabilities *Capabilities) (*Config, *HostConfig, 
 		Binds:           binds,
 		ContainerIDFile: *flContainerIDFile,
 		LxcConf:         lxcConf,
+		AutoRemove:      *flAutoRemove,
 	}
 
 	if capabilities != nil && *flMemory > 0 && !capabilities.SwapLimit {
@@ -804,7 +807,7 @@ func (container *Container) Start(hostConfig *HostConfig) error {
 
 	container.ToDisk()
 	container.SaveHostConfig(hostConfig)
-	go container.monitor()
+	go container.monitor(hostConfig)
 	return nil
 }
 
@@ -934,7 +937,7 @@ func (container *Container) waitLxc() error {
 	}
 }
 
-func (container *Container) monitor() {
+func (container *Container) monitor(hostConfig *HostConfig) {
 	// Wait for the program to exit
 	utils.Debugf("Waiting for process")
 
@@ -1001,6 +1004,12 @@ func (container *Container) monitor() {
 		// to return.
 		// FIXME: why are we serializing running state to disk in the first place?
 		//log.Printf("%s: Failed to dump configuration to the disk: %s", container.ID, err)
+	}
+
+	if hostConfig != nil && hostConfig.AutoRemove {
+		if err := container.runtime.Destroy(container); err != nil {
+			utils.Debugf("Error destroying container: %s", container.ID)
+		}
 	}
 }
 
